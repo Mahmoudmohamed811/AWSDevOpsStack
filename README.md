@@ -1,6 +1,6 @@
 # AWS Terraform Project Documentation
 
-Welcome to the documentation for the AWS Terraform project. This guide provides an overview of the infrastructure, deployment steps, and troubleshooting tips for managing a web application hosted on AWS EC2 with a MySQL RDS backend, deployed using Terraform and Docker.
+Welcome to the documentation for the AWS Terraform project. This guide provides an overview of the infrastructure, deployment steps, and troubleshooting tips for managing a web application hosted on multiple AWS EC2 instances behind an Application Load Balancer (ALB), with a MySQL RDS backend, deployed using Terraform and configured with Ansible.
 
 ---
 
@@ -11,87 +11,120 @@ Welcome to the documentation for the AWS Terraform project. This guide provides 
 ![image](https://github.com/user-attachments/assets/0afe6e37-35bd-4df7-b1e1-ca0be8cf842d)
 
 
-This project deploys a web application on AWS using Terraform to provision infrastructure. The application runs in a Docker container on an EC2 instance, connects to a MySQL RDS database, and is accessible via HTTP (port 80). Terraform state is managed in an S3 bucket for team collaboration.
+This project deploys a web application on AWS using Terraform to provision infrastructure and an Ansible playbook to configure multiple EC2 instances. The application runs in Docker containers, connects to a MySQL RDS database, and is accessible via HTTP (port 80) through an ALB. Terraform state is managed in an S3 bucket, and Terraform outputs are passed to Ansible for configuration.
 
 **Key Components**:
-
 - **VPC**: A custom VPC with public and private subnets.
-- **EC2**: Hosts the web application in a Docker container (`mahmoudmabdelhamid/getting-started`).
+- **ALB**: Application Load Balancer to distribute traffic to EC2 instances.
+- **EC2**: Multiple instances hosting the web application in Docker containers (`mahmoudmabdelhamid/getting-started`).
 - **RDS**: MySQL database for persistent storage.
-- **Security Groups**: Controls traffic to EC2 (HTTP) and RDS (MySQL).
+- **Security Groups**: Controls traffic to ALB (HTTP), EC2 (HTTP from ALB, SSH), and RDS (MySQL from EC2).
 - **Docker**: Runs the application, mapping port 3000 (container) to 80 (host).
-- **S3 Backend**: Stores Terraform state file for shared state management.
+- **S3 Backend**: Stores Terraform state file.
+- **Ansible Playbook**: Configures EC2 instances post-launch.
 
-**Objective**: Provide a scalable, modular infrastructure for a web application with a database backend.
+**Objective**: Provide a scalable, load-balanced infrastructure for a web application with a database backend.
 
 ---
 
 ## 🏗️ Architecture
 
 ### VPC
-
 - **CIDR Block**: `10.0.0.0/16`
 - **Subnets**:
-    - Public Subnet1: `10.0.0.0/24` (us-east-1a)
-    - Public Subnet2: `10.0.2.0/24` (us-east-1b)
-    - Private Subnet: `10.0.1.0/24` (us-east-1b)
+  - Public Subnet: `10.0.0.0/24` (us-east-1a)
+  - Private Subnet: `10.0.1.0/24` (us-east-1b)
 - **Internet Gateway**: Enables public subnet internet access.
 - **NAT Gateway**: Allows private subnet instances to access the internet.
 - **Route Tables**:
-    - Public: Routes to Internet Gateway.
-    - Private: Routes to NAT Gateway.
+  - Public: Routes to Internet Gateway.
+  - Private: Routes to NAT Gateway.
+
+### ALB
+- **Type**: Application Load Balancer
+- **Subnet**: Public subnet
+- **Security Group**: Allows inbound HTTP (port 80) from `0.0.0.0/0` and all outbound traffic.
+- **Target Group**: Forwards traffic to EC2 instances on port 80.
+- This configuration enables **high availability**, **automatic health monitoring**, and **scalable traffic distribution** through a single DNS endpoint.
 
 ### EC2
-
 - **AMI**: `ami-0e449927258d45bc4` (Amazon Linux 2)
 - **Instance Type**: `t2.micro`
+- **Count**: 2 (e.g., IPs: `54.146.144.1`, `107.21.176.13`)
 - **Subnet**: Public subnet
-- **Security Group**: Allows inbound HTTP (port 80) and all outbound traffic.
-- **User Data**: Script (`user_data.sh.tpl`) to:
-    - Set environment variables for MySQL connection.
-    - Update the system and install MariaDB client (`mariadb105`).
-    - Install Docker and start the service.
-    - Create the MySQL database on RDS.
-    - Pull and run the `mahmoudmabdelhamid/getting-started` Docker container.
+- **Security Group**: Allows inbound HTTP (port 80) from ALB, SSH (port 22, temporary for Ansible), and all outbound traffic.
+- **Configuration**: Managed by an Ansible playbook (`playbooks/setup_ec2.yml`), which:
+  - Sets environment variables in `/etc/profile.d/env-vars.sh`.
+  - Updates system packages (`yum -y update`).
+  - Installs MariaDB client (`mariadb`).
+  - Installs and starts Docker.
+  - Creates the MySQL database on RDS.
+  - Pulls and runs the `mahmoudmabdelhamid/getting-started` Docker container.
 
-**User Data Script Details** (`modules/ec2/templates/user_data.sh.tpl`):
+**Ansible Playbook** (`playbooks/setup_ec2.yml`):
+```yaml
+---
+- name: Update system packages
+  ansible.builtin.yum:
+    name: '*'
+    state: latest
+    update_cache: yes
 
-```bash
-#!/bin/bash
-echo "export MYSQL_PASSWORD=${MYSQL_PASSWORD}" >> /etc/profile.d/env-vars.sh
-echo "export MYSQL_DB=${MYSQL_DB}" >> /etc/profile.d/env-vars.sh
-echo "export MYSQL_USER=${MYSQL_USER}" >> /etc/profile.d/env-vars.sh
-echo "export MYSQL_HOST=${MYSQL_HOST}" >> /etc/profile.d/env-vars.sh
-chmod +x /etc/profile.d/env-vars.sh
-source /etc/profile.d/env-vars.sh
+- name: Install MariaDB client
+  ansible.builtin.yum:
+    name: mariadb105
+    state: present
 
-# Update the system
-yum -y update
+- name: Install Docker
+  ansible.builtin.yum:
+    name: docker
+    state: present
 
-# Install MariaDB client to interact with the RDS database
-dnf install -y mariadb105
+- name: Start and enable Docker service
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
 
-# Install Docker
-dnf install -y docker
-systemctl start docker
-systemctl enable docker
+- name: Add ec2-user to docker group
+  ansible.builtin.user:
+    name: ec2-user
+    groups: docker
+    append: yes
 
-# Create the database if it doesn't exist
-mysql -h "${MYSQL_HOST}" -P 3306 -u "${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_DB};"
+- name: Create MySQL database if it doesn’t exist
+  ansible.builtin.command:
+    cmd: mysql -h {{ mysql_host }} -P 3306 -u {{ mysql_user }} -p{{ mysql_password }} -e "CREATE DATABASE IF NOT EXISTS {{ mysql_db }};"
+  changed_when: false
 
-# Pull and run the Docker image
-docker pull mahmoudmabdelhamid/getting-started
-docker run -d -p 80:3000 --name getting-started \\
-  -e MYSQL_HOST="${MYSQL_HOST}" \\
-  -e MYSQL_USER="${MYSQL_USER}" \\
-  -e MYSQL_PASSWORD="${MYSQL_PASSWORD}" \\
-  -e MYSQL_DB="${MYSQL_DB}" \\
-  mahmoudmabdelhamid/getting-started
+- name: Pull Docker image
+  ansible.builtin.docker_image:
+    name: mahmoudmabdelhamid/getting-started
+    source: pull
 
+- name: Run Docker container
+  ansible.builtin.docker_container:
+    name: getting-started
+    image: mahmoudmabdelhamid/getting-started
+    state: started
+    restart_policy: always
+    ports:
+      - "80:3000"
+    env:
+      MYSQL_HOST: "{{ mysql_host }}"
+      MYSQL_USER: "{{ mysql_user }}"
+      MYSQL_PASSWORD: "{{ mysql_password }}"
+      MYSQL_DB: "{{ mysql_db }}"
+```
+
+**Inventory File** 
+```ini
+[webserver]
+54.146.144.1 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/Terraform_AWS_Project/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
+107.21.176.13 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/Terraform_AWS_Project/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
 ```
 
 - **Purpose**: Configures the EC2 instance to run the web application by installing dependencies, setting up the database, and launching the Docker container.
-- **Variables**: Uses Terraform variables (`MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DB`) passed from the EC2 module.
 
 ### RDS
 
@@ -104,22 +137,16 @@ docker run -d -p 80:3000 --name getting-started \\
 
 ### Security Groups
 
+### Security Groups
 | Security Group | Rule Type | Protocol | Port | Source/Destination | Description |
-| --- | --- | --- | --- | --- | --- |
-| `web-sg` | Ingress | TCP | 80 | 0.0.0.0/0 | Allow HTTP traffic to web server |
-| `web-sg` | Egress | All | 0-65535 | 0.0.0.0/0 | Allow all outbound traffic (e.g., Docker Hub, RDS, package repos) |
-| `web-sg` | Ingress | TCP | 22 | `web-sg` | Allow SSH traffic |
-| `rds-sg` | Ingress | TCP | 3306 | `web-sg` | Allow web server to access RDS |
+|----------------|-----------|----------|------|--------------------|-------------|
+| `alb-sg`       | Ingress   | TCP      | 80   | 0.0.0.0/0          | Allow HTTP traffic to ALB |
+| `alb-sg`       | Egress    | All      | 0-65535 | 0.0.0.0/0       | Allow all outbound traffic (e.g., to EC2) |
+| `web-sg`       | Ingress   | TCP      | 80   | `alb-sg`           | Allow HTTP traffic from ALB |
+| `web-sg`       | Ingress   | TCP      | 22   | 0.0.0.0/0          | Allow SSH for Ansible (restrict to your IP in production) |
+| `web-sg`       | Egress    | All      | 0-65535 | 0.0.0.0/0       | Allow all outbound traffic (e.g., Docker Hub, RDS) |
+| `rds-sg`       | Ingress   | TCP      | 3306 | `web-sg`           | Allow MySQL traffic from EC2 |
 
-### 📄 **Application Load Balancer (ALB) Configuration**
-
-This Terraform setup provisions a public-facing **Application Load Balancer (ALB)** that distributes HTTP traffic across two EC2 instances. It includes:
-
-- An ALB in two public subnets with a listener on port 80.
-- A target group with health checks on `/` to monitor instance availability.
-- Two EC2 instances registered as targets, each listening on port 80.
-
-This configuration enables **high availability**, **automatic health monitoring**, and **scalable traffic distribution** through a single DNS endpoint.
 
 ### Docker
 
@@ -156,7 +183,7 @@ terraform {
 
 **Setup Instructions**:
 
-1. **Create S3 Bucket**:
+ **Create S3 Bucket**:
     - In AWS Console, create a bucket named `my-state-file-terraform-bucket` in `us-east-1`.
 
 ---
@@ -164,54 +191,57 @@ terraform {
 ## 🚀 Deployment Instructions
 
 ### Prerequisites
-
 - **AWS Account**: Configured with access keys.
 - **Terraform**: Installed (version compatible with `hashicorp/aws ~> 5.0`).
-- **S3 Bucket**: `my-state-file-terraform-bucket` in `us-east-1.`
+- **Ansible**: Installed (`pip install ansible`).
+- **S3 Bucket**: `my-state-file-terraform-bucket` in `us-east-1` for state storage.
+- **SSH Key**: AWS key pair (`my-key.pem`) at `~/projects/terra/Terraform_AWS_Project/keys/my-key.pem`.
 
 ### Steps
 
 1. **Set Up S3 Backend**:
-    - Create the S3 bucket `my-state-file-terraform-bucket` in `us-east-1` (see “Terraform State Management”).
-2. **Clone the Repository**:
-    
-    ```bash
-    git clone <your-repo-url>
-    cd <repo-directory>
-    
-    ```
-    
-3. **Configure Variables**:
-    - Edit `variables.tf` to set `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DB` (defaults: `root`, `YUSSUFyasser`, `todos`).
-    - Alternatively, create a `terraform.tfvars` file:
-        
-        ```hcl
-        MYSQL_USER = "root"
-        MYSQL_PASSWORD = "YUSSUFyasser"
-        MYSQL_DB = "todos"
-        
-        ```
-        
-4. **Initialize Terraform**:
-    
-    ```bash
-    terraform init
-    
-    ```
-    
-    - This configures the S3 backend and copies any local state to `my-state-file-terraform-bucket/statefile.tfstate`.
-5. **Plan and Apply**:
-    
-    ```bash
-    terraform plan
-    terraform apply
-    
-    ```
-    
-    - Confirm by typing `yes` when prompted.
-6. **Access the Application**:
-    - Get the EC2 instance’s public IP from the AWS Console or Terraform output.
-    - Open `http://<public-ip>` in a browser to access the application.
+   - Create `my-state-file-terraform-bucket` in `us-east-1` with versioning enabled (see “Terraform State Management”).
+   - Apply bucket policy and IAM permissions.
+2. **Set Up Ansible**:
+   - Install Ansible: `pip install ansible`.
+   - Install Docker collection: `ansible-galaxy collection install community.docker`.
+   - Create `playbooks/setup_ec2.yml` with the provided playbook.
+   - Ensure `inventory.ini` and `vars.yml` are generated by Terraform.
+3. **Clone the Repository**:
+   ```bash
+   git clone <your-repo-url>
+   cd <repo-directory>
+   ```
+4. **Configure Variables**:
+   - Edit `variables.tf` or create `terraform.tfvars`:
+     ```hcl
+     MYSQL_USER = "root"
+     MYSQL_PASSWORD = "YUSSUFyasser"
+     MYSQL_DB = "todos"
+     ssh_private_key_path = "~/projects/terra/Terraform_AWS_Project/keys/my-key.pem"
+     ```
+   - Update `main.tf` with SSH key details:
+     ```hcl
+     module "ec2" {
+       key_name            = "my-key"
+       ssh_private_key_path = "~/projects/terra/Terraform_AWS_Project/keys/my-key.pem"
+     }
+     ```
+5. **Initialize Terraform**:
+   ```bash
+   terraform init
+   ```
+   - Syncs with `my-state-file-terraform-bucket/statefile.tfstate`.
+6. **Plan and Apply**:
+   ```bash
+   terraform plan
+   terraform apply
+   ```
+   - Confirm by typing `yes`.
+   - Terraform launches the ALB, EC2 instances, and RDS, generates `inventory.ini` and `vars.yml`, and triggers the Ansible playbook.
+7. **Access the Application**:
+   - Get the ALB DNS name: `terraform output alb_dns_name` or AWS Console (Elastic Load Balancing > Load Balancers).
+   - Open `http://<alb-dns-name>` in a browser.
 
 ### Post-Deployment
 
