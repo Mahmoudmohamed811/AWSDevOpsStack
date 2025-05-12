@@ -1,0 +1,6 @@
+---
+# vars file for webapp-ec2-config
+mysql_host: myrds.czrsk6kucxie.us-east-1.rds.amazonaws.com
+mysql_user: root
+mysql_password: YUSSUFyasser
+mysql_db: todos

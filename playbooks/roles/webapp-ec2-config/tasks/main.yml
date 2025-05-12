@@ -1,0 +1,52 @@
+---
+- name: Update system packages
+  ansible.builtin.yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+
+- name: Install MariaDB client
+  ansible.builtin.yum:
+    name: mariadb105
+    state: present
+
+- name: Install Docker
+  ansible.builtin.yum:
+    name: docker
+    state: present
+
+- name: Start and enable Docker service
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add ec2-user to docker group
+  ansible.builtin.user:
+    name: ec2-user
+    groups: docker
+    append: yes
+
+- name: Create MySQL database if it doesn’t exist
+  ansible.builtin.command:
+    cmd: mysql -h {{ mysql_host }} -P 3306 -u {{ mysql_user }} -p{{ mysql_password }} -e "CREATE DATABASE IF NOT EXISTS {{ mysql_db }};"
+  changed_when: false
+
+- name: Pull Docker image
+  ansible.builtin.docker_image:
+    name: mahmoudmabdelhamid/getting-started
+    source: pull
+
+- name: Run Docker container
+  ansible.builtin.docker_container:
+    name: getting-started
+    image: mahmoudmabdelhamid/getting-started
+    state: started
+    restart_policy: always
+    ports:
+      - "80:3000"
+    env:
+      MYSQL_HOST: "{{ mysql_host }}"
+      MYSQL_USER: "{{ mysql_user }}"
+      MYSQL_PASSWORD: "{{ mysql_password }}"
+      MYSQL_DB: "{{ mysql_db }}"

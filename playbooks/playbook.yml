@@ -1,0 +1,6 @@
+---
+- name: Deploy Web Application
+  hosts: webserver
+  become: true
+  roles:
+    - ~/projects/terra/Terraform_AWS_Project/playbooks/roles/webapp-ec2-config
