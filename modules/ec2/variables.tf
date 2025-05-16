@@ -8,7 +8,17 @@ variable "public_subnet_id2" {
   type        = string
 }
 
+variable "public_subnet_id3" {
+  description = "The ID of the public subnet"
+  type        = string
+}
+
 variable "web_sg_id" {
+  description = "The ID of the web security group"
+  type        = string
+}
+
+variable "promtheus_sg_id" {
   description = "The ID of the web security group"
   type        = string
 }

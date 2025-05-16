@@ -8,6 +8,11 @@ output "web_instance_ip_1" {
   value       = module.ec2.web_instance_1_ip
 }
 
+output "prometheus_instance" {
+  description = "prometheus_instance instance IP"
+  value       = module.ec2.prometheus_instance_ip
+}
+
 output "rds_address" {
   value = module.rds.rds_address
 }

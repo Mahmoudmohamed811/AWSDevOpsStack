@@ -41,3 +41,15 @@ resource "aws_instance" "web_instance_id_1" {
 
   depends_on = [var.mysql_host]
 }
+
+resource "aws_instance" "prometheus_instance" {
+  ami                         = "ami-0e449927258d45bc4"
+  instance_type               = "t2.micro"
+  vpc_security_group_ids      = [var.promtheus_sg_id]
+  subnet_id                   = var.public_subnet_id3
+  associate_public_ip_address = true
+  key_name                    = "vockey"
+  tags = {
+    Name = "prometheus_instance"
+  }
+}
