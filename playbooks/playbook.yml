@@ -3,4 +3,4 @@
   hosts: webserver
   become: true
   roles:
-    - ~/projects/terra/Terraform_AWS_Project/playbooks/roles/webapp-ec2-config
+    - ~/projects/terra/AWSDevOpsStack/playbooks/roles/webapp-ec2-config

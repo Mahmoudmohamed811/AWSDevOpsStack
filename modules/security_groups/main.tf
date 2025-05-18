@@ -49,6 +49,16 @@ resource "aws_security_group_rule" "web_inbound_ssh" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
+resource "aws_security_group_rule" "node_exporter_ingress" {
+  type              = "ingress"
+  from_port         = 9100
+  to_port           = 9100
+  protocol          = "tcp"
+  security_group_id = aws_security_group.web-sg.id
+  source_security_group_id = aws_security_group.promtheus-sg.id
+}
+
+
 resource "aws_security_group_rule" "alb_outbound" {
   type              = "egress"
   from_port         = 0
@@ -86,7 +96,23 @@ resource "aws_security_group_rule" "promtheus_inbound_http" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
+resource "aws_security_group_rule" "promtheus_inbound_ssh" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  security_group_id = aws_security_group.promtheus-sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
 
+resource "aws_security_group_rule" "promtheus_server" {
+  type              = "ingress"
+  from_port         = 9090
+  to_port           = 9090
+  protocol          = "tcp"
+  security_group_id = aws_security_group.promtheus-sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
 
 
 resource "aws_security_group_rule" "rds_from_web" {
