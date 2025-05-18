@@ -1,3 +1,5 @@
 [webserver]
-54.146.144.1 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/Terraform_AWS_Project/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
-107.21.176.13 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/Terraform_AWS_Project/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
+35.173.189.169 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/AWSDevOpsStack/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
+44.222.243.245 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/AWSDevOpsStack/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
+[prometheus]
+3.92.133.177 ansible_user=ec2-user ansible_ssh_private_key_file=~/projects/terra/AWSDevOpsStack/keys/my-key.pem ansible_python_interpreter=/usr/bin/python3
