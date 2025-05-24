@@ -13,3 +13,7 @@ output "alb_sg_id" {
 output "promtheus_sg_id" {
   value = aws_security_group.promtheus-sg.id
 }
+
+output "grafana_sg_id" {
+  value = aws_security_group.grafana-sg.id
+}

@@ -16,6 +16,12 @@ resource "aws_security_group" "promtheus-sg" {
   vpc_id      = var.vpc_id
 }
 
+resource "aws_security_group" "grafana-sg" {
+  name        = "grafana sg"
+  description = "SG for grafana Server"
+  vpc_id      = var.vpc_id
+}
+
 resource "aws_security_group" "alb-sg" {
   name        = "alb sg"
   description = "SG for aplication load balancer"
@@ -87,14 +93,14 @@ resource "aws_security_group_rule" "promtheus_outbound" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
-resource "aws_security_group_rule" "promtheus_inbound_http" {
-  type              = "ingress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  security_group_id = aws_security_group.promtheus-sg.id
-  cidr_blocks       = ["0.0.0.0/0"]
-}
+# resource "aws_security_group_rule" "promtheus_inbound_http" {
+#   type              = "ingress"
+#   from_port         = 80
+#   to_port           = 80
+#   protocol          = "tcp"
+#   security_group_id = aws_security_group.promtheus-sg.id
+#   cidr_blocks       = ["0.0.0.0/0"]
+# }
 
 resource "aws_security_group_rule" "promtheus_inbound_ssh" {
   type              = "ingress"
@@ -111,6 +117,33 @@ resource "aws_security_group_rule" "promtheus_server" {
   to_port           = 9090
   protocol          = "tcp"
   security_group_id = aws_security_group.promtheus-sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "grafana_server" {
+  type              = "ingress"
+  from_port         = 3000
+  to_port           = 3000
+  protocol          = "tcp"
+  security_group_id = aws_security_group.grafana-sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "grafana_inbound_ssh" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  security_group_id = aws_security_group.grafana-sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "grafana_outbound" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.grafana-sg.id
   cidr_blocks       = ["0.0.0.0/0"]
 }
 

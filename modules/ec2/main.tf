@@ -53,3 +53,15 @@ resource "aws_instance" "prometheus_instance" {
     Name = "prometheus_instance"
   }
 }
+
+resource "aws_instance" "grafana_instance" {
+  ami                         = "ami-0e449927258d45bc4"
+  instance_type               = "t2.micro"
+  vpc_security_group_ids      = [var.grafana_sg_id]
+  subnet_id                   = var.public_subnet_id3
+  associate_public_ip_address = true
+  key_name                    = "vockey"
+  tags = {
+    Name = "grafana_instance"
+  }
+}
