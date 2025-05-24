@@ -24,6 +24,7 @@ module "ec2" {
   public_subnet_id3 = module.vpc.public_subnet3
   web_sg_id         = module.security_groups.web_sg_id
   promtheus_sg_id   = module.security_groups.promtheus_sg_id
+  grafana_sg_id     = module.security_groups.grafana_sg_id
   mysql_host        = module.rds.rds_address
 }
 

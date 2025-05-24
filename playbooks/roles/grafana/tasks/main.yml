@@ -1,0 +1,32 @@
+---
+# tasks file for roles/grafana
+- name: Import Grafana GPG key
+  rpm_key:
+    state: present
+    key: https://packages.grafana.com/gpg.key
+
+- name: Add Grafana repo for Amazon Linux 2023
+  copy:
+    dest: /etc/yum.repos.d/grafana.repo
+    content: |
+      [grafana]
+      name=grafana
+      baseurl=https://packages.grafana.com/oss/rpm
+      repo_gpgcheck=1
+      gpgcheck=1
+      enabled=1
+      gpgkey=https://packages.grafana.com/gpg.key
+      sslverify=1
+      sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+
+- name: Install Grafana
+  dnf:
+    name: grafana
+    state: present
+    update_cache: yes
+
+- name: Enable and start Grafana service
+  systemd:
+    name: grafana-server
+    state: started
+    enabled: yes

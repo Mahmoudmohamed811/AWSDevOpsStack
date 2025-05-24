@@ -13,6 +13,11 @@ output "prometheus_instance" {
   value       = module.ec2.prometheus_instance_ip
 }
 
+output "grafana_instance" {
+  description = "grafana_instance instance IP"
+  value       = module.ec2.grafana_instance_ip
+}
+
 output "rds_address" {
   value = module.rds.rds_address
 }

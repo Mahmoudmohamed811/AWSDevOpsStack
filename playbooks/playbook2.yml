@@ -3,7 +3,7 @@
   roles:
     - roles/prometheus
 
-- hosts: all
+- hosts: monitoring
   become: yes
   roles:
     - roles/node_exporter

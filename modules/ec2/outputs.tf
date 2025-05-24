@@ -27,3 +27,13 @@ output "prometheus_instance_ip" {
   description = "prometheus_instance instance IP"
   value       = aws_instance.prometheus_instance.public_ip
 }
+
+output "grafana_instance_id" {
+  description = "grafana_instance instance ID"
+  value       = aws_instance.grafana_instance.id
+}
+
+output "grafana_instance_ip" {
+  description = "grafana_instance instance IP"
+  value       = aws_instance.grafana_instance.public_ip
+}

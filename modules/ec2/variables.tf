@@ -23,6 +23,11 @@ variable "promtheus_sg_id" {
   type        = string
 }
 
+variable "grafana_sg_id" {
+  description = "The ID of the web security group"
+  type        = string
+}
+
 # variable "mysql_user" {
 #   description = "The MySQL username"
 #   type        = string
