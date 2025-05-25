@@ -7,16 +7,16 @@
 # Write groups and hosts with IPs from terraform output
 {
   echo "[grafana]"
-  terraform output -raw grafana_instance
+  (cd ../terraform && terraform output -raw grafana_instance)
   echo ""
 
   echo "[prometheus]"
-  terraform output -raw prometheus_instance
+  (cd ../terraform && terraform output -raw prometheus_instance)
   echo ""
 
   echo "[webserver]"
-  terraform output -raw web_instance_ip_0
-  terraform output -raw web_instance_ip_1
+  (cd ../terraform && terraform output -raw web_instance_ip_0)
+  (cd ../terraform && terraform output -raw web_instance_ip_1)
   echo ""
 
   echo "[monitoring:children]"
@@ -31,4 +31,4 @@
 } >> inventory.ini
 
 # Create vars file with MySQL host info
-echo "mysql_host: $(terraform output -raw rds_address)" > roles/webapp-ec2-config/vars/main.yml
+echo "mysql_host: $(cd ../terraform && terraform output -raw rds_address)" > roles/webapp-ec2-config/vars/main.yml
