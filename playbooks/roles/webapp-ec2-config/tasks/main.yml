@@ -1,17 +1,17 @@
 ---
 - name: Update system packages
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: '*'
     state: latest
     update_cache: yes
 
 - name: Install MariaDB client
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: mariadb105
     state: present
 
 - name: Install Docker
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: docker
     state: present
 
