@@ -29,6 +29,7 @@
   echo "ansible_user=ec2-user"
   echo "ansible_ssh_private_key_file=./keys/my-key.pem"
   echo "ansible_python_interpreter=/usr/bin/python3"
+  echo "ansible_pkg_mgr=dnf"
 } >> inventory.ini
 
 # Create vars file with MySQL host info
