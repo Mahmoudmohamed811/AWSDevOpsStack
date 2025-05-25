@@ -33,12 +33,12 @@
   changed_when: false
 
 - name: Pull Docker image
-  ansible.builtin.docker_image:
+  community.docker.docker_image_pull:
     name: mahmoudmabdelhamid/getting-started
-    source: pull
+    
 
 - name: Run Docker container
-  ansible.builtin.docker_container:
+  docker_container:
     name: getting-started
     image: mahmoudmabdelhamid/getting-started
     state: started
