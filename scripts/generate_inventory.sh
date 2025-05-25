@@ -2,7 +2,7 @@
 
 
 # Clear or create the inventory file
-> playbooks/inventory.ini
+> inventory.ini
 
 # Write groups and hosts with IPs from terraform output
 {
@@ -28,7 +28,7 @@
   echo "ansible_user=ec2-user"
   echo "ansible_ssh_private_key_file=./keys/my-key.pem"
   echo "ansible_python_interpreter=/usr/bin/python3"
-} >> playbooks/inventory.ini
+} >> inventory.ini
 
 # Create vars file with MySQL host info
-echo "mysql_host: $(terraform output -raw rds_address)" > playbooks/roles/webapp-ec2-config/vars/main.yml
+echo "mysql_host: $(terraform output -raw rds_address)" > roles/webapp-ec2-config/vars/main.yml
