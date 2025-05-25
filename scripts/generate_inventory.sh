@@ -33,4 +33,4 @@
 } >> inventory.ini
 
 # Create vars file with MySQL host info
-echo "mysql_host: $(cd ../terraform && terraform output -raw rds_address)" > roles/webapp-ec2-config/vars/main.yml
+echo "mysql_host: $(cd ../terraform && terraform output -raw rds_address)" >> roles/webapp-ec2-config/vars/main.yml
