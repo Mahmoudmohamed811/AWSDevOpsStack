@@ -16,6 +16,7 @@
 
   echo "[webserver]"
   (cd ../terraform && terraform output -raw web_instance_ip_0)
+  echo ""
   (cd ../terraform && terraform output -raw web_instance_ip_1)
   echo ""
 
