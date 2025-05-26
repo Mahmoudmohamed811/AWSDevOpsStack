@@ -33,7 +33,7 @@
   changed_when: false
 
 - name: Pull Docker image
-  ansible.builtin.docker_image:
+  community.docker.docker_image:
     name: mahmoudmabdelhamid/getting-started
     source: pull
    
