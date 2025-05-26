@@ -7,7 +7,7 @@ web_ips=$(aws ec2 describe-instances \
   --output text)
 
 # Set the output path for the Prometheus config inside the role
-PROMETHEUS_CONFIG_PATH="playbooks/roles/prometheus/files/prometheus.yml"
+PROMETHEUS_CONFIG_PATH="../playbooks/roles/prometheus/files/prometheus.yml"
 
 # Start writing the Prometheus config
 cat > "$PROMETHEUS_CONFIG_PATH" << EOF
