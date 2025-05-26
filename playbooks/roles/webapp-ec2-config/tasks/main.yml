@@ -33,8 +33,10 @@
   changed_when: false
 
 - name: Pull Docker image
-  community.docker.docker_image_pull:
+  community.docker.docker_image:
     name: mahmoudmabdelhamid/getting-started
+    source: pull
+    state: present
     
 
 - name: Run Docker container
