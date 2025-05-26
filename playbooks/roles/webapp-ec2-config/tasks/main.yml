@@ -33,10 +33,9 @@
   changed_when: false
 
 - name: Pull Docker image
-  community.docker.docker_image:
+  community.docker.docker_image_pull:
     name: mahmoudmabdelhamid/getting-started
-    source: pull
-    state: present
+   
     
 
 - name: Run Docker container
