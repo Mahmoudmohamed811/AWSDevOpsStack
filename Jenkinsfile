@@ -22,6 +22,13 @@ pipeline {
             }
         }
 
+        stage('fix permissions') {
+            steps {
+                sh 'chown -R jenkins:jenkins /var/lib/jenkins/workspace/AwsStack/playbooks'
+                sh 'chmod -R u+rw /var/lib/jenkins/workspace/AwsStack/playbooks'
+            }
+        }
+
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
@@ -46,8 +53,8 @@ pipeline {
             }
         }
 
-        stage('generate prometheus config'){
-            steps{
+        stage('generate prometheus config') {
+            steps {
                 dir('scripts') {
                     sh '''
               chmod +x generate_prometheus_config.sh
