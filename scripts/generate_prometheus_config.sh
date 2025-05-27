@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Get list of private IPs for EC2 instances tagged with Role=webserver
-web_ips=$(aws ec2 describe-instances \
+web_ips=$(aws ec2 describe-instances --region us-east-1 \
   --filters "Name=tag:Name,Values=web0,web1" "Name=instance-state-name,Values=running" \
   --query "Reservations[*].Instances[*].PrivateIpAddress" \
   --output text)
